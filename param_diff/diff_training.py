@@ -136,12 +136,12 @@ def main(args):
         train_loss = 0.0
         for step, batch in enumerate(train_dataloader):
             with accelerator.accumulate(unet):
-                weight_values = batch["weight_values"]
+                weight_values = batch["weight_values"] # [bs, dim]
                 bs = weight_values.size(0)
                 # noise
-                noise = torch.randn_like(weight_values)
+                noise = torch.randn_like(weight_values) # [bs, dim]
                 # timestep
-                timesteps = torch.randint(0, noise_scheduler.num_train_timesteps, (bs,))
+                timesteps = torch.randint(0, noise_scheduler.num_train_timesteps, (bs,)) # [bs]
                 timesteps = timesteps.long()
                 
                 noisy_weight_values = noise_scheduler.add_noise(weight_values, noise, timesteps)
@@ -188,5 +188,5 @@ def main(args):
     accelerator.wait_for_everyone()
     # create the pipeline and save
 
-if __name__ == "__main__":
-    # parse
+# if __name__ == "__main__":
+#     # parse
