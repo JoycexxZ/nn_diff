@@ -1,0 +1,23 @@
+name: "mnist"
+exp_name: "test"
+
+model: "ConvNet2"
+
+dataset_config:
+  dataset: "mnist"
+  root: "/scratch/datasets/mnist"
+  train_bs: 256
+  test_bs: 1024
+  transforms: True
+  num_workers: 4
+
+epochs: 150
+lr: 0.1
+momentum: 0.9
+weight_decay: 5e-4
+optimizer: "sgd"
+init: "gaussian" # "default"
+
+eval_per_epoch: 10
+seed: 3407
+param_save_dir: "/scratch/yufan/nn_diff"

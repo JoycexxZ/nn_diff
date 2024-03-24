@@ -1,0 +1,5 @@
+[default]
+entity = ucalgary
+project = gen_param_mnist
+base_url = https://api.wandb.ai
+

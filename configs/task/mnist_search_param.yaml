@@ -1,0 +1,14 @@
+program: sweep_hyperparams.py
+method: grid
+metric: 
+  name: accuracy
+  goal: maximize
+parameters:
+  learning_rate:            
+    values: [0.1, 0.05, 0.001, 0.0005]
+  batch_size:
+    values: [128, 256]
+  seed:
+    values: [3407, 3408, 3409]
+project: "param_gen_mnist"
+name: "sweep_param"
