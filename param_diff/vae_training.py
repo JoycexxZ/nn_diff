@@ -179,11 +179,13 @@ def main(args):
                 # test here
                 if global_step % args.validation_steps == 0:
                     if accelerator.is_main_process:
+                        _test_acc = 0.0
                         for sample in range(5):
                             test_model.load_param_from_tensor(model_pred[sample])
                             # resnet_load_param_from_tensor(model_pred[sample], train_layers, test_model)
-                            accuracy = test(test_model, test_loader)
-                            accelerator.log({"test_accuracy": accuracy}, step=global_step)
+                            _test_acc += test(test_model, test_loader)
+                        _test_acc = _test_acc / 5
+                        accelerator.log({"test_accuracy": _test_acc}, step=global_step)
 
             logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)
