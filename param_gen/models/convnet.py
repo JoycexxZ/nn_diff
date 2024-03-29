@@ -30,6 +30,15 @@ class ConvNet2_mnist(nn.Module):
                 nn.init.normal_(m.weight, mean=0, std=0.01)
                 nn.init.normal_(m.bias, mean=0, std=0.01)
 
+    def load_param_from_tensor(self, weight):
+        _w = torch.clone(weight).detach()
+        if _w.device != self.conv1.weight.device:
+            _w = _w.to(self.conv1.weight.device)
+        for name, layer in self.named_parameters():
+            layer_param = _w[:layer.numel()]
+            layer.data = layer_param.reshape(layer.shape)
+            _w = _w[layer.numel():]
+
 
 class ConvNet3_mnist(nn.Module):
     def __init__(self, in_channels):

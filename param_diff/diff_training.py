@@ -17,6 +17,7 @@ from diffusers import DDPMScheduler
 from diffusers.optimization import get_scheduler
 
 from modules.unet import AE_CNN_bottleneck
+from param_dataset import ParamDataset
 
 
 logger = get_logger(__name__, log_level="INFO")
@@ -92,7 +93,7 @@ def main(args):
     )
 
     # data
-    train_dataset = ...
+    train_dataset = ParamDataset(args.data)
 
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
@@ -136,7 +137,7 @@ def main(args):
         train_loss = 0.0
         for step, batch in enumerate(train_dataloader):
             with accelerator.accumulate(unet):
-                weight_values = batch["weight_values"] # [bs, dim]
+                weight_values = batch["weight_value"] # [bs, dim]
                 bs = weight_values.size(0)
                 # noise
                 noise = torch.randn_like(weight_values) # [bs, dim]

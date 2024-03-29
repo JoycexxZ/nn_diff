@@ -13,8 +13,9 @@ scheduler:
   variance_type: "fixed_large"
 
 data:
-  dataset: ""
-  dataset_dir: ""
+  dataset: "mnist_gaussian_200"
+  dataset_dir: "/scratch/yufan/nn_diff/gen_param_2_gen_param_2/"
+  augmentation_scale: 0.001
 
 learning_rate: 1e-4
 scale_lr: False
@@ -24,6 +25,7 @@ adam_beta2: 0.999
 adam_weight_decay: 0.0
 adam_eps: 1e-8
 lr_scheduler: "constant"
+lr_warmup_steps
 
 num_training_steps: 1000
 

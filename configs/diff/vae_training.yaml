@@ -1,0 +1,39 @@
+name: "mnist_vae"
+exp_name: "test"
+
+ae:
+  model: "latent_ae_cnn_big"
+  in_channels: 1
+  latent_augmentation: 0.05
+
+data:
+  dataset: "mnist_gaussian_200"
+  dataset_dir: "/scratch/yufan/nn_diff/gen_param_2_gen_param_2/"
+#  dataset: "mnist_resnet18"
+#  dataset_dir: "/home/yufan/projects/Neural-Network-Diffusion/param_data/mnist"
+  augmentation_scale: 0.001
+
+test:
+  model: "ConvNet2"
+  dataset: "mnist"
+  root: "/scratch/datasets/mnist"
+  test_bs: 1024
+
+train_batch_size: 100
+learning_rate: 1e-3
+scale_lr: False
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_weight_decay: 2e-6
+adam_eps: 1e-8
+lr_scheduler: "constant"
+lr_warmup_steps: 0
+
+gradient_accumulation_steps: 1
+max_grad_norm: 1.0
+num_workers: 4
+mixed_precision: "fp16"
+
+num_training_steps: 5000
+validation_steps: 10
+seed: 3407
