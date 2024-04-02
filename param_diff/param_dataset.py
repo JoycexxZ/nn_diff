@@ -11,7 +11,7 @@ class ParamDataset(Dataset):
     def __init__(self, args, augmentation=True):
         super().__init__()
         self.dataset_dir = args.dataset_dir
-        self.model_pth_list = os.listdir(self.dataset_dir)
+        self.model_pth_list = os.listdir(self.dataset_dir) #[:20]
         self.augmentation = augmentation
         self.augmentation_scale = args.augmentation_scale
 
@@ -57,10 +57,10 @@ class ParamDataset2(Dataset):
     def __getitem__(self, index: int):
         weight = self.model_params[index]
 
-        # augmentation: add noise
-        if self.augmentation:
-            noise = torch.randn_like(weight) * self.augmentation_scale
-            weight = weight + noise
+        # # augmentation: add noise
+        # if self.augmentation:
+        #     noise = torch.randn_like(weight) * self.augmentation_scale
+        #     weight = weight + noise
 
         data = {"weight_value": weight}
         return data

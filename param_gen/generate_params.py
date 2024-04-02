@@ -9,10 +9,10 @@ import yaml
 from task_training import main
 
 
-config_pth = '../configs/task/mnist.yaml'
+config_pth = '../configs/task/cifar.yaml'
 args = OmegaConf.load(config_pth)
 
-with open("../configs/task/mnist_gen.yaml", "r") as f:
+with open("../configs/task/cifar_gen.yaml", "r") as f:
     sweep_config = yaml.load(f, Loader=yaml.FullLoader)
 project_name = sweep_config["name"]
 

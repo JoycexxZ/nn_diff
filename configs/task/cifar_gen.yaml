@@ -1,0 +1,11 @@
+program: generate_params.py
+method: grid
+metric: 
+  name: accuracy
+  goal: maximize
+parameters:
+  seed:
+    min: 1
+    max: 200
+project: "gen_param_cifar"
+name: "gen_param"

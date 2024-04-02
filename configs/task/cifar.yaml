@@ -1,0 +1,23 @@
+name: "cifar"
+exp_name: "test"
+
+model: "ConvNet3"
+
+dataset_config:
+  dataset: "cifar"
+  root: "/scratch/datasets/"
+  train_bs: 128
+  test_bs: 1024
+  transforms: True
+  num_workers: 4
+
+epochs: 200
+lr: 0.1
+momentum: 0.9
+weight_decay: 5e-4
+optimizer: "sgd"
+init: "gaussian" # "default"
+
+eval_per_epoch: 50
+seed: 3407
+param_save_dir: "/scratch/yufan/nn_diff"

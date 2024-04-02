@@ -18,10 +18,11 @@ from omegaconf import OmegaConf
 from param_dataset import ParamDataset, ParamDataset2
 from modules.vae_encoder import small, medium
 from modules.vae_encoder_cnn import Latent_AE_cnn_big
+from criterion import kld_loss
 
 import sys
 sys.path.append("../param_gen/models")
-from convnet import ConvNet2_mnist
+from convnet import ConvNet2_mnist, ConvNet3_cifar
 from resnet import resnet_load_param_from_tensor
 
 logger = get_logger(__name__, log_level="INFO")
@@ -31,7 +32,7 @@ def test(model, test_loader):
     total_correct = 0
     model.eval()
     for images, labels in test_loader:
-        images, labels = images.cuda(), labels.cuda()
+        images, labels = images, labels
         outputs = model(images)
         pred_labels = torch.argmax(outputs, dim=1)
 
@@ -91,6 +92,14 @@ def main(args):
                              latent_noise_factor=args.ae.latent_augmentation)
     elif args.ae.model == "latent_ae_cnn_big":
         autoencoder = Latent_AE_cnn_big(in_dim=data_dim)
+        
+    if args.data.dataset == "mnist_resnet18":
+        test_model = train_dataset.get_model().cuda()
+        train_layers = train_dataset.get_layer_names()
+    elif args.test.model == "ConvNet3":
+        test_model = ConvNet3_cifar(3).cuda()
+    elif args.test.model == "ConvNet2":
+        test_model = ConvNet2_mnist(1).cuda()
 
     # optimizer
     learning_rate = args.learning_rate
@@ -114,33 +123,37 @@ def main(args):
         num_warmup_steps=args.lr_warmup_steps * args.gradient_accumulation_steps,
         num_training_steps=num_training_steps * args.gradient_accumulation_steps,
     )
+    
+    if args.test.dataset == 'mnist':
+        normal_value = {'mean': [0.1307,], 'std': [0.3081,]}
+    elif args.test.dataset == 'cifar':
+        normal_value = {"mean": [0.485, 0.456, 0.406], 'std': [0.229, 0.224, 0.225]}
+    test_transform = transforms.Compose([
+                                    transforms.ToTensor(),
+                                    transforms.Normalize(normal_value["mean"], normal_value["std"])
+                                ])
+    if args.test.dataset == "mnist":
+        test_dataset = datasets.MNIST(root=args.test.root, train=False, download=True, transform=test_transform)
+    elif args.test.dataset == "cifar":
+        test_dataset = datasets.CIFAR10(root=args.test.root, train=False, download=True, transform=test_transform)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.test.test_bs, shuffle=False)
 
     # prepare with accelerator
-    autoencoder, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
-        autoencoder, optimizer, train_dataloader, lr_scheduler
+    autoencoder, optimizer, train_dataloader, lr_scheduler, test_model, test_loader = accelerator.prepare(
+        autoencoder, optimizer, train_dataloader, lr_scheduler, test_model, test_loader
     )
 
     # train
     num_training_epochs = math.ceil(num_training_steps / len(train_dataloader))
 
     if accelerator.is_main_process:
-        accelerator.init_trackers("vae-training")
+        accelerator.init_trackers("vae-training", init_kwargs={"wandb": {"name": f"{args.name}_{args.exp_name}"}})
 
     global_step = 0
     progress_bar = tqdm(range(global_step, num_training_steps), disable=not accelerator.is_local_main_process)
     progress_bar.set_description("steps")
 
-    if args.data.dataset == "mnist_resnet18":
-        test_model = train_dataset.get_model().cuda()
-        test_model.eval()
-        train_layers = train_dataset.get_layer_names()
-    elif args.test.model == "ConvNet2":
-        test_model = ConvNet2_mnist(1).cuda()
-        test_model.eval()
-
-    test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-    test_dataset = datasets.MNIST(root=args.test.root, train=False, download=True, transform=test_transform)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.test.test_bs, shuffle=False)
+    test_model.eval()
 
     for epoch in range(num_training_epochs):
         autoencoder.train()
@@ -150,19 +163,21 @@ def main(args):
                 weight_values = batch["weight_value"]  # [bs, dim]
                 bs = weight_values.size(0)
                 # model_pred = autoencoder(weight_values)
-                latent = autoencoder.Enc(weight_values)
+                _weight_values = weight_values + args.data.augmentation_scale * torch.randn_like(weight_values)
+                latent = autoencoder.Enc(_weight_values)
                 noisy_latent = latent + args.ae.latent_augmentation * torch.randn_like(latent)
                 model_pred = autoencoder.Dec(noisy_latent)
                 # print(model_pred.shape, weight_values.shape)
 
                 loss = F.mse_loss(model_pred.float(), weight_values.float(), reduction="sum")
+                loss += args.kl_loss_weight * kld_loss(latent)
 
                 avg_loss = accelerator.gather(loss.repeat(bs)).mean()
                 train_loss += avg_loss.item() / args.gradient_accumulation_steps
 
                 accelerator.backward(loss)
-                if accelerator.sync_gradients:
-                    accelerator.clip_grad_norm_(autoencoder.parameters(), args.max_grad_norm)
+                # if accelerator.sync_gradients:
+                #     accelerator.clip_grad_norm_(autoencoder.parameters(), args.max_grad_norm)
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
@@ -180,8 +195,10 @@ def main(args):
                 if global_step % args.validation_steps == 0:
                     if accelerator.is_main_process:
                         _test_acc = 0.0
-                        for sample in range(5):
-                            test_model.load_param_from_tensor(model_pred[sample])
+                        test_batch = weight_values[:5]
+                        test_output = autoencoder.Dec(autoencoder.Enc(test_batch))
+                        for sample in range(test_output.size(0)):
+                            test_model.load_param_from_tensor(test_output[sample])
                             # resnet_load_param_from_tensor(model_pred[sample], train_layers, test_model)
                             _test_acc += test(test_model, test_loader)
                         _test_acc = _test_acc / 5

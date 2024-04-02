@@ -139,8 +139,9 @@ def main(args):
             with accelerator.accumulate(unet):
                 weight_values = batch["weight_value"] # [bs, dim]
                 bs = weight_values.size(0)
+                latent = vae.encode(weight_values)
                 # noise
-                noise = torch.randn_like(weight_values) # [bs, dim]
+                noise = torch.randn_like(latent) # [bs, dim]
                 # timestep
                 timesteps = torch.randint(0, noise_scheduler.num_train_timesteps, (bs,)) # [bs]
                 timesteps = timesteps.long()

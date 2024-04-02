@@ -14,10 +14,10 @@ import logging
 from torch import autograd
 import time
 from torchvision import transforms
-from torchvision.datasets import MNIST
+from torchvision.datasets import MNIST, CIFAR10
 import os
 
-from models.convnet import ConvNet2_mnist, ConvNet3_mnist
+from models.convnet import ConvNet2_mnist, ConvNet3_cifar
 
 
 def build_model_and_opt(args):
@@ -25,8 +25,8 @@ def build_model_and_opt(args):
     input_channels = 1 if args.dataset_config.dataset == 'mnist' else 3
     if args.model == 'ConvNet2' and args.dataset_config.dataset == 'mnist':
         model = ConvNet2_mnist(input_channels, init=args.init).cuda()
-    elif args.model == 'ConvNet3' and args.dataset_config.dataset == 'mnist':
-        model = ConvNet3_mnist(input_channels).cuda()
+    elif args.model == 'ConvNet3' and args.dataset_config.dataset == 'cifar':
+        model = ConvNet3_cifar(input_channels).cuda()
     else:
         raise ValueError('Unknown model: {}'.format(args.model))
     # optimizer
@@ -44,27 +44,34 @@ def build_model_and_opt(args):
 def build_loader(args):
     # transforms
     input_size = 28 if args.dataset == 'mnist' else 32
+    if args.dataset == 'mnist':
+        normal_value = {'mean': [0.1307,], 'std': [0.3081,]}
+    elif args.dataset == 'cifar':
+        normal_value = {"mean": [0.485, 0.456, 0.406], 'std': [0.229, 0.224, 0.225]}
     test_transform = transforms.Compose([
                                     transforms.ToTensor(),
-                                    transforms.Normalize((0.1307,), (0.3081,))
+                                    transforms.Normalize(normal_value["mean"], normal_value["std"])
                                 ])
     if args.transforms:
         train_transform = transforms.Compose([
                                         transforms.RandomHorizontalFlip(),
                                         transforms.RandomCrop(input_size, 4),
                                         transforms.ToTensor(), # first, convert image to PyTorch tensor
-                                        transforms.Normalize((0.1307,), (0.3081,))
+                                        transforms.Normalize(normal_value["mean"], normal_value["std"])
                                         ])
     else:
         train_transform = transforms.Compose([
                                         transforms.ToTensor(), # first, convert image to PyTorch tensor
-                                        transforms.Normalize((0.1307,), (0.3081,))
+                                        transforms.Normalize(normal_value["mean"], normal_value["std"])
                                         ])
     
     # datasets
     if args.dataset == 'mnist':
         train_set = MNIST(root=args.root, train=True, download=True, transform=train_transform)
         test_set = MNIST(root=args.root, train=False, download=True, transform=test_transform)
+    elif args.dataset == 'cifar':
+        train_set = CIFAR10(root=args.root, train=True, download=True, transform=train_transform)
+        test_set = CIFAR10(root=args.root, train=False, download=True, transform=test_transform)
     else:
         raise ValueError('Unknown dataset: {}'.format(args.dataset))
 
