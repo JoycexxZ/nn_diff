@@ -101,6 +101,9 @@ class UNet1DModel(ModelMixin, ConfigMixin):
                 act_fn=act_fn,
                 out_dim=block_out_channels[0],
             )
+            print("input_dim", timestep_input_dim)
+            print("time_embed_dim", time_embed_dim)
+            print("out_dim", block_out_channels[0])
 
         self.down_blocks = nn.ModuleList([])
         self.mid_block = None
@@ -238,3 +241,23 @@ class UNet1DModel(ModelMixin, ConfigMixin):
             return (sample,)
 
         return UNet1DOutput(sample=sample)
+
+
+def naive_unet_1d(input_dim):
+    unet = UNet1DModel(sample_size=input_dim, 
+                       in_channels=1,
+                       out_channels=1,
+                       time_embedding_type="fourier",
+                       use_timestep_embedding=True,
+                       down_block_types=("DownBlock1DNoSkip", "DownBlock1D", "AttnDownBlock1D"),
+                       up_block_types=("AttnUpBlock1D", "UpBlock1D", "UpBlock1DNoSkip"),
+                       mid_block_type="UNetMidBlock1D",
+                       out_block_type=None,
+                       block_out_channels=(8, 8, 8),
+                       act_fn="gelu",
+                       norm_num_groups=8,
+                       layers_per_block=1,
+                       downsample_each_block=False
+                       )
+
+    return unet

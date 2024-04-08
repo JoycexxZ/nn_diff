@@ -1,5 +1,5 @@
 name: "mnist"
-exp_name: "test"
+exp_name: "same_init"
 
 model: "ConvNet2"
 
@@ -11,13 +11,14 @@ dataset_config:
   transforms: True
   num_workers: 4
 
-epochs: 150
+epochs: 350
 lr: 0.1
 momentum: 0.9
 weight_decay: 5e-4
 optimizer: "sgd"
 init: "gaussian" # "default"
 
-eval_per_epoch: 10
+save_start_epoch: 150
+eval_per_epoch: 20
 seed: 3407
 param_save_dir: "/scratch/yufan/nn_diff"

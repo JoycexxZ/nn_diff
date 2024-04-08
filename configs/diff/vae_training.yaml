@@ -1,10 +1,10 @@
 name: "cifar_vae"
-exp_name: "lr0.001_scheduler"
+exp_name: "lr0.01_scheduler_noise0.001"
 
 ae:
   model: "latent_ae_cnn_big"
   in_channels: 1
-  latent_augmentation: 0.005
+  latent_augmentation: 0.001
 
 data:
   dataset: "cifar_gaussian_200"
@@ -22,13 +22,14 @@ test:
 kl_loss_weight: 0.0
 
 train_batch_size: 200
-learning_rate: 0.001
+learning_rate: 0.01
 scale_lr: False
 adam_beta1: 0.9
 adam_beta2: 0.999
 adam_weight_decay: 2e-6
 adam_eps: 1e-8
 lr_scheduler: "cosine_with_restarts"
+# lr_scheduler: "cosine_with_restarts"
 lr_warmup_steps: 0
 
 gradient_accumulation_steps: 1

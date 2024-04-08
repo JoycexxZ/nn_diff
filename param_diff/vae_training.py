@@ -163,9 +163,10 @@ def main(args):
                 weight_values = batch["weight_value"]  # [bs, dim]
                 bs = weight_values.size(0)
                 # model_pred = autoencoder(weight_values)
-                _weight_values = weight_values + args.data.augmentation_scale * torch.randn_like(weight_values)
+                _weight_values = (1-args.data.augmentation_scale) * weight_values + args.data.augmentation_scale * torch.randn_like(weight_values)
                 latent = autoencoder.Enc(_weight_values)
-                noisy_latent = latent + args.ae.latent_augmentation * torch.randn_like(latent)
+                noisy_latent = (1-args.ae.latent_augmentation)*latent + args.ae.latent_augmentation * torch.randn_like(latent)
+                noisy_latent = torch.clamp(noisy_latent, -1, 1)
                 model_pred = autoencoder.Dec(noisy_latent)
                 # print(model_pred.shape, weight_values.shape)
 
@@ -195,14 +196,19 @@ def main(args):
                 if global_step % args.validation_steps == 0:
                     if accelerator.is_main_process:
                         _test_acc = 0.0
+                        _best_acc = 0.0
                         test_batch = weight_values[:5]
                         test_output = autoencoder.Dec(autoencoder.Enc(test_batch))
                         for sample in range(test_output.size(0)):
                             test_model.load_param_from_tensor(test_output[sample])
                             # resnet_load_param_from_tensor(model_pred[sample], train_layers, test_model)
-                            _test_acc += test(test_model, test_loader)
+                            sample_test_acc = test(test_model, test_loader)
+                            _test_acc += sample_test_acc
+                            if sample_test_acc > _best_acc:
+                                _best_acc = sample_test_acc
                         _test_acc = _test_acc / 5
                         accelerator.log({"test_accuracy": _test_acc}, step=global_step)
+                        accelerator.log({"best_accuracy": _best_acc}, step=global_step)
 
             logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)

@@ -95,9 +95,9 @@ class Engine:
         
         self.output_dir = args.output_dir
             
-        # wandb.init(project=args.name, name=args.exp_name)
+        wandb.init(project=args.name, name=args.exp_name)
         # wandb.config = {"batch_size": args.dataset_config,
-        #                 "lr": args.lr}
+        #                "lr": args.lr}
         
         self.logger = logging.getLogger()
         
@@ -119,13 +119,14 @@ class Engine:
                 wandb.log({"accuracy": accuracy, "loss": loss}, step=epoch)
                 self.logger.info("test on epoch {}".format(epoch))
                 self.logger.info("test accuracy: {:.4f}, test loss: {:.4f}".format(accuracy, loss))
+            
+            if self.args.param_save_dir != "" and (epoch+1) >= self.args.save_start_epoch:
+                param_save_folder = "{}/{}_{}".format(self.args.param_save_dir, self.args.name, self.args.exp_name)
+                if not os.path.exists(param_save_folder):
+                    os.makedirs(param_save_folder)
+                param_save_path = os.path.join(param_save_folder, "epoch_{}_seed_{}.pth".format(epoch, self.args.seed))
+                torch.save(self.model.state_dict(), param_save_path)
         
-        if self.args.param_save_dir != "":
-            param_save_folder = "{}/{}_{}".format(self.args.param_save_dir, self.args.name, self.args.exp_name)
-            if not os.path.exists(param_save_folder):
-                os.makedirs(param_save_folder)
-            param_save_path = os.path.join(param_save_folder, "seed_{}.pth".format(self.args.seed))
-            torch.save(self.model.state_dict(), param_save_path)
         
     def evaluate(self):
         total_correct = 0

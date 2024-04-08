@@ -11,13 +11,14 @@ dataset_config:
   transforms: True
   num_workers: 4
 
-epochs: 200
+epochs: 400
 lr: 0.1
 momentum: 0.9
 weight_decay: 5e-4
 optimizer: "sgd"
 init: "gaussian" # "default"
 
+save_start_epoch: 200
 eval_per_epoch: 50
 seed: 3407
 param_save_dir: "/scratch/yufan/nn_diff"

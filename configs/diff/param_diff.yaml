@@ -1,9 +1,21 @@
-name: "mnist"
+name: "cifar_diff"
 exp_name: "test"
 
 unet:
-  model: "AE_CNN_bottleneck"
-  in_channels: 1
+  model: "naive_unet1d"
+
+data:
+  dataset: "cifar_gaussian_200"
+  dataset_dir: "/scratch/yufan/nn_diff/gen_param_gen_param/"
+#  dataset: "mnist_resnet18"
+#  dataset_dir: "/home/yufan/projects/Neural-Network-Diffusion/param_data/mnist"
+  augmentation_scale: 0.001
+
+test:
+  model: "ConvNet3"
+  dataset: "cifar"
+  root: "/scratch/datasets/"
+  test_bs: 1024
 
 scheduler:
   start: 1e-4
@@ -12,27 +24,24 @@ scheduler:
   n_timestep: 1000
   variance_type: "fixed_large"
 
-data:
-  dataset: "mnist_gaussian_200"
-  dataset_dir: "/scratch/yufan/nn_diff/gen_param_2_gen_param_2/"
-  augmentation_scale: 0.001
-
-learning_rate: 1e-4
+train_batch_size: 200
+learning_rate: 1e-3
 scale_lr: False
-train_batch_size: 4
 adam_beta1: 0.9
 adam_beta2: 0.999
 adam_weight_decay: 0.0
-adam_eps: 1e-8
+adam_epsilon: 1e-8
 lr_scheduler: "constant"
-lr_warmup_steps
+lr_warmup_steps: 0
 
-num_training_steps: 1000
+num_train_steps: 1000
 
 mixed_precision: "fp16"
 gradient_accumulation_steps: 1
 max_grad_norm: 1.0
 
 num_workers: 4
+validation_steps: 20
+
 
 seed: 3407
